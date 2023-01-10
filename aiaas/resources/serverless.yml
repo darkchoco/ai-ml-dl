@@ -1,0 +1,46 @@
+service: resources
+frameworkVersion: ">=1.30.0"
+custom:
+  bucket: ${env:CH02_BUCKET}
+  crawlerqueue: Ch02CrawlerQueue
+  analysisqueue: Ch02AnalysisQueue
+  region: ${env:AWS_DEFAULT_REGION, 'eu-west-1'}
+  accountid: ${env:AWS_ACCOUNT_ID}
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: dev
+  region: ${env:AWS_DEFAULT_REGION, 'eu-west-1'}
+
+resources:
+  Resources:
+    WebAppS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucket}
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+    WebAppS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: WebAppS3Bucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+                - s3:GetObject
+              Resource: arn:aws:s3:::${self:custom.bucket}/*
+    Ch02CrawlerQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "${self:custom.crawlerqueue}"
+    Ch02AnalysisQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "${self:custom.analysisqueue}"
